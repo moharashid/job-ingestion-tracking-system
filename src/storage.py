@@ -40,3 +40,8 @@ def save_jobs(jobs):
         json.dump(all_jobs, f, indent=4)
 
     return len(new_jobs)
+
+# save updated jobs to the json file
+def update_saved_jobs(jobs):
+    with open(DATA_FILE, "w") as f:
+        json.dump(jobs, f, indent=4)

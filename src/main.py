@@ -24,7 +24,7 @@ def main():
     # process the raw job data and return a list of normalized job objects
     processed_jobs = process_jobs(raw_jobs)
     logger.info("Processed %d jobs", len(processed_jobs))
-    logger.info("Sample processed job: %s", processed_jobs[:3] if processed_jobs else "No jobs to show")
+    # logger.info("Sample processed job: %s", processed_jobs[:3] if processed_jobs else "No jobs to show")
     # save the processed jobs to the json file
     new_jobs = save_jobs(processed_jobs)
     logger.info("Saved %d new jobs", new_jobs)
