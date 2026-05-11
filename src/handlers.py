@@ -1,4 +1,7 @@
 from src.api import update_job_state, get_job, get_jobs
+from src.dynamodb import get_job_from_dynamodb, save_job_to_dynamodb, get_all_jobs_from_dynamodb
+from src.processor import process_jobs
+from src.fetcher import fetch_jobs
 import json
 
 VALID_STATES = ["NEW", "APPLIED", "IGNORED"]
@@ -22,7 +25,7 @@ def event_get_job(event,context):
     if not job_id:
         return response(400, {"error": "Missing job_id in path parameters"})
         
-    job = get_job(job_id)
+    job = get_job_from_dynamodb(job_id)
 
     if not job:
         return response(404, {"error": f"Job with ID {job_id} not found"})
@@ -39,7 +42,7 @@ def event_get_jobs(event, context):
     state = parameters.get("state", None)
     
     if state is None:
-        jobs = get_jobs()
+        jobs = get_all_jobs_from_dynamodb()
         return response(200, jobs)
         
     state = state.strip().upper()
@@ -47,7 +50,7 @@ def event_get_jobs(event, context):
     if state not in VALID_STATES:
         return response(400, {"error":f"{state} is not a valid state. Valid states are: {', '.join(VALID_STATES)}"})
         
-    jobs = get_jobs(state)
+    jobs = get_all_jobs_from_dynamodb(state)
     
     return response(200, jobs)
     
@@ -83,3 +86,19 @@ def event_update_job_state(event, context):
         return response(404, {"error": f"Job with ID {job_id} not found"})
         
     return response(200, updated_job)
+
+# fetch jobs from API
+def event_fetch_jobs(event, context):
+    params = {
+        'title': 'python',
+        'location': 'remote',
+    }
+    if event.get("httpMethod") != "POST":
+        return response(405, {"error": "Method Not Allowed"})
+    
+    # fetch jobs from API and save to DynamoDB
+    jobs = fetch_jobs(params)
+    processed_jobs = process_jobs(jobs)
+    saved_count = save_job_to_dynamodb(processed_jobs)
+    
+    return response(200, {"message": f"Fetched {len(processed_jobs)} jobs from API, saved {saved_count} new jobs to DynamoDB"})
