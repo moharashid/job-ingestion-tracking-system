@@ -5,8 +5,13 @@ fetches jobs
 import logging
 import requests
 import time
+import os
 
-API_URL = 'https://jobdataapi.com/api/jobs/'
+
+API_URL = os.getenv(
+    "API_URL",
+    "https://jobdataapi.com/api/jobs/"
+)
 
 # configure logging
 logging.basicConfig(
