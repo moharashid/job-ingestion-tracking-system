@@ -1,11 +1,20 @@
-
 import boto3
-from boto3.dynamodb.conditions import Attr, Key
-
+from boto3.dynamodb.conditions import Attr
+import os
 # connect to dynamodb resource
 dynamodb = boto3.resource('dynamodb')
 # connect to the jobs table
-table = dynamodb.Table('jobs')
+JOB_TABLE_NAME = os.getenv(
+    "JOB_TABLE_NAME",
+    "jobs"
+)
+PREFERENCES_TABLE_NAME = os.getenv(
+    "PREFERENCES_TABLE_NAME",
+    "preferences"
+)
+table = dynamodb.Table(JOB_TABLE_NAME)
+pref_table = dynamodb.Table(PREFERENCES_TABLE_NAME)
+
 # get a single job by ID
 def get_job_from_dynamodb(job_id):
     job = table.get_item(
@@ -44,16 +53,34 @@ def get_all_jobs_from_dynamodb(state=None):
 
 # update job state in dynamodb
 def update_job_state_in_dynamodb(job_id, new_state=None):
-    if new_state is not None:
-        return table.update_item(
-            Key={
-                'job_id': job_id
-            },
-            UpdateExpression=f"SET state = :{new_state}",
-            ExpressionAttributeValues={
-                ':state': new_state
-            }
-            returns="ALL_NEW"
-        )
-        
+    response = table.update_item(
+        Key = {"job_id": job_id},
+        UpdateExpression="set #s = :s",
+        ExpressionAttributeNames={"#s": "state"},
+        ExpressionAttributeValues={":s": new_state},
+        ReturnValues="ALL_NEW"
+    )
+
+    return response.get("Attributes", None)
+
+# save user preferences to dynamodb
+def save_preferences_to_dynamodb(user_id, title, location):
+    result =pref_table.put_item(
+        Item={
+            "user_id": user_id,
+            "title": title,
+            "location": location
+        }
+    )
+    return result.get("Attributes", None)
+
+# get user preferences from dynamodb
+def get_preferences_from_dynamodb(user_id):
+    result = pref_table.get_item(
+        Key={
+            "user_id": user_id
+        }
+    )
+    if "Item" in result:
+        return result["Item"]
     return None
