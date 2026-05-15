@@ -17,13 +17,15 @@ VALID_STATES = ["NEW", "APPLIED", "IGNORED"]
 
 # lambda handler for API Gateway events
 def lambda_handler(event, context):
+    print(event)
     method = get_event_method(event)
     path = event.get("rawPath", "")
 
     if method == "POST" and path.endswith("/jobs/fetch_jobs"):
         return event_fetch_jobs(event, context)
 
-    if method == "GET" and path.endswith("/jobs") or "/jobs?" in path:
+    if method == "GET" and (path.endswith("/jobs") or "/jobs?" in path):
+        print("PRINT TEST")
         return event_get_jobs(event, context)
 
     if method == "GET" and "/jobs/job" in path:
@@ -33,9 +35,11 @@ def lambda_handler(event, context):
         return event_update_job_state(event, context)
 
     if method == "PUT" and "/jobs/preferences" in path:
+        print(json.dumps(event))
         return event_set_preferences(event, context)
 
     if method == "GET" and "/jobs/preferences" in path:
+        print(json.dumps(event))
         return event_get_preferences(event, context)
     
     logger.warning(f"Received unsupported request: {method} {path}")
@@ -215,5 +219,3 @@ def event_get_preferences(event, context):
     if not preferences:
         return response(404, {"error": "Preferences not found"})
     return response(200, preferences)
-
-# curl to test get preferences: curl -X GET https://8g3ti1p029.execute-api.us-east-1.amazonaws.com/prod/jobs/preferences/default
